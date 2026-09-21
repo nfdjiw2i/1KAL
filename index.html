@@ -365,6 +365,8 @@ async function fbDelete(path){const r=await fetch(fbUrl(path),{method:'DELETE'})
 let me=null, serverMeta={}, categories={}, channels={}, roles={}, messages=[], currentChannelId=null;
 let oldestTs=null,hasMore=true,loadingOlder=false,pendingAttach=null,authMode='login',authBusy=false;
 let pollTimer=null,lastMsgTs=0,editingChannelId=null,pendingAvatarData=null;
+let dragState={kind:null,id:null};
+let categoryRules = {};
 
 function $(id){return document.getElementById(id)}
 function toast(t,ms=3000){const el=$('toast');el.textContent=t;el.classList.add('on');clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('on'),ms)}
@@ -402,7 +404,6 @@ async function doAuth(){
       if(await fbGet('usernames/'+nickKey)){$('authErr').textContent='Username taken';return}
       const salt=makeSalt(),passwordHash=await hashPassword(pass,salt),userId=uid();
       const userData={username:nick,displayName:nick,passwordHash,salt,avatar:'',status:'online',createdAt:Date.now(),lastLogin:Date.now(),roleIds:[]};
-      // auto role
       const meta=await fbGet('meta/server')||{};
       if(meta.autoRoleId) userData.roleIds=[meta.autoRoleId];
       await fbSet('users/'+userId,userData);await fbSet('usernames/'+nickKey,userId);
@@ -437,7 +438,7 @@ function dice(seed){return 'https://api.dicebear.com/7.x/identicon/svg?seed='+en
 async function ensureDefaults(){
   const meta=await fbGet('meta/server');
   if(!meta){
-    await fbSet('meta/server',{name:'INTEL CONNECT',description:'Welcome',icon:'',ownerNick:OWNER_NICK,disableNickChange:false,autoRoleId:'',createdAt:Date.now()});
+    await fbSet('meta/server',{name:'INTEL CONNECT',description:'Welcome',icon:'',ownerNick:OWNER_NICK,disableNickChange:false,autoRoleId:'',createdAt:Date.now(),order:[],showMembers:true});
   }
   const cats=await fbGet('categories');
   if(!cats||!Object.keys(cats).length){
@@ -484,7 +485,6 @@ function renderNav(){
     const icon=ch.type==='forum'?'☰':'#';
     btn.innerHTML='<span class="hash">'+icon+'</span><span>'+esc(ch.name)+'</span>';
     btn.addEventListener('click', ()=>selectChannel(id));
-    // double-click also settings for managers
     btn.addEventListener('dblclick', e=>{ if(canManage()){ e.preventDefault(); openChannelSettings(id); }});
     if(canManage()) setupDrag(btn, 'channel', id);
     nav.appendChild(btn);
@@ -506,17 +506,15 @@ function renderNav(){
       .forEach(([id,ch])=>renderCh(id,ch));
   });
 
-  // NO buttons for +channel +forum +category (PC menu already used)
+  // NO + buttons
 }
 
 function getEffectivePerm(ch, permKey){
   if(!ch||!me) return true;
   if(isOwner()) return true;
   const ov=ch.overrides||{};
-  // user override first
   const uk='user:'+me.uid;
   if(ov[uk] && typeof ov[uk][permKey]==='boolean') return ov[uk][permKey];
-  // role overrides (highest position wins - simplify: any allow / any deny)
   let allowed=null;
   for(const rid of (me.roleIds||[])){
     const rk='role:'+rid;
@@ -526,7 +524,6 @@ function getEffectivePerm(ch, permKey){
     }
   }
   if(allowed===true) return true;
-  // default from @everyone role or true
   if(ov['role:r_everyone'] && typeof ov['role:r_everyone'][permKey]==='boolean')
     return ov['role:r_everyone'][permKey];
   return true;
@@ -608,8 +605,8 @@ const CHANNEL_PERMS = [
   {key:'READ_HISTORY', label:'Read Message History'},
 ];
 
-let chPermOverrides = {}; // { role:ID | user:ID : { VIEW_CHANNEL: true/false, ... } }
-let chPermSelected = null; // 'role:xxx' or 'user:xxx'
+let chPermOverrides = {}; 
+let chPermSelected = null; 
 let allUsersCache = {};
 
 function chSetTab(tab){
@@ -632,7 +629,6 @@ async function openChannelSettings(id){
   $('chSetNsfw').checked=!!ch.nsfw;
   chPermOverrides = JSON.parse(JSON.stringify(ch.overrides||{}));
   chPermSelected = null;
-  // load users for member list
   try{ allUsersCache = await fbGet('users')||{}; }catch(e){ allUsersCache={}; }
   buildPermDatalist();
   renderPermTargetList();
@@ -651,15 +647,13 @@ function buildPermDatalist(){
   dl.innerHTML=opts;
 }
 
-function filterPermTargets(){ /* datalist handles suggestions */ }
+function filterPermTargets(){}
 
 function addPermTarget(){
   const q=($('chPermSearch').value||'').trim();
   if(!q) return;
   let key=null, label=null, color='#888';
-  // role:Name or just name
   const qLow=q.toLowerCase().replace(/^role:/i,'').replace(/^user:/i,'');
-  // try role
   for(const [id,r] of Object.entries(roles)){
     if((r.name||'').toLowerCase()===qLow || q.toLowerCase()==='role:'+(r.name||'').toLowerCase()){
       key='role:'+id; label=r.name; color=r.color||'#888'; break;
@@ -676,7 +670,6 @@ function addPermTarget(){
   if(!key){ toast('Role or member not found'); return; }
   if(!chPermOverrides[key]){
     chPermOverrides[key]={};
-    // default allow basic
     CHANNEL_PERMS.forEach(p=>{ chPermOverrides[key][p.key]=true; });
   }
   $('chPermSearch').value='';
@@ -713,8 +706,6 @@ function selectPermTarget(key){
   else if(!isRole&&allUsersCache[id]) title='Member: '+(allUsersCache[id].displayName||allUsersCache[id].username);
   const checks=CHANNEL_PERMS.map(p=>{
     const val=ov[p.key];
-    const checked=val===true?'checked':(val===false?'':'checked');
-    // tri-state simplified: checkbox true/false
     const isOn=val!==false;
     return '<div class="perm-item"><span>'+p.label+'</span><input type="checkbox" data-pkey="'+p.key+'" '+(isOn?'checked':'')+' onchange="toggleChPerm(\''+p.key+'\',this.checked)"/></div>';
   }).join('');
@@ -767,28 +758,14 @@ async function deleteChannel(){
   toast('Deleted');
 }
 
-/* CATEGORY RULES (works for all channels in category) */
-let categoryRules = {}; // {catId: {banWords:[], slowmode:0, nsfw:false}}
-
-async function getCategoryRules(catId){
-  if(categoryRules[catId] !== undefined) return categoryRules[catId];
-  try{
-    const data = await fbGet('category-rules/'+catId);
-    categoryRules[catId] = data || {banWords:[], slowmode:0, nsfw:false};
-    return categoryRules[catId];
-  }catch(e){
-    categoryRules[catId] = {banWords:[], slowmode:0, nsfw:false};
-    return categoryRules[catId];
-  }
+/* CATEGORY RULES */
+function getEffectiveCategoryRules(catId){
+  return categoryRules[catId] || {banWords:[], slowmode:0, nsfw:false};
 }
 
 async function saveCategoryRules(catId, rules){
   categoryRules[catId] = rules;
   await fbSet('category-rules/'+catId, rules);
-}
-
-function getEffectiveCategoryRules(catId){
-  return categoryRules[catId] || {banWords:[], slowmode:0, nsfw:false};
 }
 
 function showCategoryRules(catId){
@@ -799,6 +776,7 @@ function showCategoryRules(catId){
   openModal('modalChannelPerms');
   chSetTab('category-rules');
 }
+
 
 /* ===== CONTEXT MENU ===== */
 function hideCtx(){ const m=$('ctxMenu'); if(m) m.classList.remove('on'); }
@@ -825,6 +803,7 @@ function onCtxAction(action){
   else if(action==='ch-settings' && ctxTarget.id){ openChannelSettings(ctxTarget.id); }
   else if(action==='ch-delete' && ctxTarget.id){ editingChannelId=ctxTarget.id; deleteChannel(); }
   else if(action==='cat-delete' && ctxTarget.id){ deleteCategory(ctxTarget.id); }
+  else if(action==='cat-rules' && ctxTarget.id){ showCategoryRules(ctxTarget.id); }
 }
 function openCreateChannelPreselect(type){
   openCreateChannel();
@@ -840,7 +819,6 @@ document.addEventListener('contextmenu', e=>{
   const chBtn=e.target.closest('.ch-btn');
   const catHdr=e.target.closest('.cat-hdr');
   if(chBtn){
-    // find channel id from current selection logic - store data-id on buttons
     const id=chBtn.getAttribute('data-id');
     ctxTarget={type:'channel',id};
     showCtx(e.clientX,e.clientY,[
@@ -868,9 +846,8 @@ document.addEventListener('contextmenu', e=>{
   }
 });
 
-/* ===== DRAG AND DROP ===== */
-let dragState={kind:null,id:null};
 
+/* ===== DRAG AND DROP ===== */
 function setupDrag(el, kind, id){
   el.draggable=true;
   el.setAttribute('data-id', id);
@@ -888,11 +865,9 @@ function setupDrag(el, kind, id){
     const targetId=el.getAttribute('data-id');
     if(!dragState.id||dragState.id===targetId) return;
     if(dragState.kind==='channel' && kind==='channel'){
-      // swap positions within same category or move
       const src=channels[dragState.id], dst=channels[targetId];
       if(!src||!dst) return;
       const p1=src.position, p2=dst.position;
-      // also adopt category of target
       await fbUpdate('channels/'+dragState.id,{position:p2, categoryId:dst.categoryId||null});
       await fbUpdate('channels/'+targetId,{position:p1});
       channels[dragState.id].position=p2;
@@ -909,7 +884,6 @@ function setupDrag(el, kind, id){
       categories[targetId].position=p1;
       renderNav(); toast('Category moved');
     }else if(dragState.kind==='channel' && kind==='category'){
-      // drop channel onto category
       await fbUpdate('channels/'+dragState.id,{categoryId:targetId, position:Date.now()});
       channels[dragState.id].categoryId=targetId;
       channels[dragState.id].position=Date.now();
@@ -987,12 +961,9 @@ function messageHtml(m){
 async function sendMessage(){
   const text=$('msgInput').value.trim();if(!text&&!pendingAttach)return;
   const ch=channels[currentChannelId];if(!canSendChannel(ch)){toast('Cannot send here');return}
-  // ban words
   const bans=(ch.banWords||[]).map(w=>w.toLowerCase());
   if(bans.length&&text){const low=text.toLowerCase();if(bans.some(w=>low.includes(w))){toast('Message contains banned words');return}}
-  // link permission
   if(text && /https?:\/\//i.test(text) && !canSendLinks(ch)){toast('You cannot send links here');return}
-  // file/media permission
   if(pendingAttach){
     const isImg=pendingAttach.type&&pendingAttach.type.indexOf('image/')===0;
     if(isImg && !canSendMedia(ch)){toast('You cannot send media here');return}
