@@ -122,6 +122,13 @@ button,input,textarea,select{font-family:inherit}
 
 @media(max-width:900px){.members-panel{display:none}}
 @media(max-width:700px){.sidebar{width:64px}.sidebar .logo-t,.sidebar .nav-btn .lbl,.sidebar .nav-label span,.user-bar .info{display:none}.nav-btn{justify-content:center}}
+
+.msg.pending{opacity:.55}
+.msg.pending .send-status{font-size:11px;color:var(--mu2);margin-left:6px;font-family:'JetBrains Mono',monospace}
+.msg.failed{opacity:.7}
+.msg.failed .send-status{color:var(--rd)}
+.msg{animation:msgIn .18s ease}
+@keyframes msgIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 </style>
 </head>
 <body>
@@ -217,7 +224,7 @@ button,input,textarea,select{font-family:inherit}
 const FB_BASE = 'https://intell-a2b60-default-rtdb.firebaseio.com';
 const FB_SECRET = 'x4aVe5AMCLlhGP0rMQfIMzI9qFyKErbFZULo49eP';
 /* Ник владельца — только он создаёт каналы. Поставь свой ник: */
-const OWNER_NICK = 'admin';
+const OWNER_NICK = 'SStwendRT';
 const PAGE_SIZE = 30;
 const POLL_MS = 2500;
 
@@ -477,41 +484,44 @@ function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } 
 
 async function loadMessages(initial){
   if(!currentChannelId) return;
-  const path='messages/'+currentChannelId;
   try{
-    const params={ orderBy:'"createdAt"', limitToLast:String(PAGE_SIZE) };
-    if(!initial&&oldestTs) params.endAt=String(oldestTs-1);
-    const raw=await fbQuery(path, params)||{};
-    const batch=Object.entries(raw).map(([key,v])=>({key,...v})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-    if(batch.length<PAGE_SIZE) hasMore=false;
-    if(batch.length) oldestTs=batch[0].createdAt;
-    if(initial){
-      messages=batch;
-      if(batch.length) lastMsgTs=batch[batch.length-1].createdAt;
-      renderMessages(true);
-    }else{
-      const box=$('messages'); const prevH=box.scrollHeight;
-      messages=batch.concat(messages); renderMessages(false);
-      box.scrollTop=box.scrollHeight-prevH;
+    // Без orderBy — индекс в Rules не нужен. Сортируем на клиенте.
+    const raw = await fbGet('messages/'+currentChannelId) || {};
+    let all = Object.entries(raw).map(([key,v])=>({key,...v}))
+      .sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    hasMore = false;
+    if(all.length){
+      oldestTs = all[0].createdAt;
+      lastMsgTs = all[all.length-1].createdAt;
     }
+    messages = all;
+    renderMessages(true);
     const el=$('loadOlder');
-    if(el){ el.textContent=hasMore?'↑ Загрузить ещё':'Начало'; el.onclick=hasMore?()=>loadOlder():null; }
+    if(el){ el.textContent = all.length ? 'Начало переписки' : 'Пока нет сообщений'; el.onclick = null; }
   }catch(e){
-    console.error(e); toast('Ошибка: '+e.message);
-    const el=$('loadOlder'); if(el) el.textContent='Ошибка';
+    console.error(e); toast('Ошибка загрузки: '+e.message);
+    const el=$('loadOlder'); if(el) el.textContent='Ошибка загрузки';
   }
 }
 
 async function pollNewMessages(){
   if(!currentChannelId) return;
   try{
-    const path='messages/'+currentChannelId;
-    const raw=await fbQuery(path,{ orderBy:'"createdAt"', startAt:String((lastMsgTs||0)+1), limitToLast:'30' })||{};
-    const batch=Object.entries(raw).map(([key,v])=>({key,...v})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-    for(const m of batch){
+    const raw = await fbGet('messages/'+currentChannelId) || {};
+    const all = Object.entries(raw).map(([key,v])=>({key,...v}))
+      .sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    for(const m of all){
       if(messages.some(x=>x.key===m.key)) continue;
-      messages.push(m); appendMessage(m,true);
-      if(m.createdAt>lastMsgTs) lastMsgTs=m.createdAt;
+      // только новые
+      if((m.createdAt||0) <= (lastMsgTs||0) && messages.length) continue;
+      messages.push(m);
+      appendMessage(m, true);
+      if(m.createdAt > lastMsgTs) lastMsgTs = m.createdAt;
+    }
+    // sync lastMsgTs
+    if(all.length){
+      const maxTs = all[all.length-1].createdAt || 0;
+      if(maxTs > lastMsgTs) lastMsgTs = maxTs;
     }
   }catch(e){}
 }
@@ -557,7 +567,7 @@ function messageHtml(m){
   }
   let content=esc(m.content||'');
   content=content.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
-  return '<div class="msg"><img class="av" src="'+esc(av)+'" alt=""/><div class="body"><div class="head"><span class="author">'+esc(m.authorName||'User')+'</span><span class="time">'+fmtTime(m.createdAt)+'</span></div><div class="content">'+content+'</div>'+attach+'</div></div>';
+  return '<div class="msg" data-key="'+esc(m.key)+'"><img class="av" src="'+esc(av)+'" alt=""/><div class="body"><div class="head"><span class="author">'+esc(m.authorName||'User')+'</span><span class="time">'+fmtTime(m.createdAt)+'</span></div><div class="content">'+content+'</div>'+attach+'</div></div>';
 }
 
 async function sendMessage(){
@@ -565,21 +575,74 @@ async function sendMessage(){
   if(!text&&!pendingAttach) return;
   if(!currentChannelId) return;
   const btn=$('sendBtn'); btn.disabled=true;
-  const msg={ authorId:me.uid, authorName:me.displayName||me.username||'User', avatar:me.avatar||'', content:text, createdAt:Date.now(), attach:null };
+
+  const msg={
+    authorId:me.uid,
+    authorName:me.displayName||me.username||'User',
+    avatar:me.avatar||'',
+    content:text,
+    createdAt:Date.now(),
+    attach:null
+  };
   if(pendingAttach){
     if(pendingAttach.dataUrl.length>900000){ toast('Файл слишком большой'); btn.disabled=false; return; }
     msg.attach={ type:pendingAttach.type, name:pendingAttach.name, size:pendingAttach.size, url:pendingAttach.dataUrl };
   }
+
+  // Мгновенно показываем сообщение (optimistic UI)
+  const tempKey = 'temp_'+Date.now()+'_'+Math.random().toString(36).slice(2,6);
+  const optimistic = { key: tempKey, ...msg, _pending: true };
+  messages.push(optimistic);
+  appendMessage(optimistic, true);
+  markPending(tempKey, true);
+
+  $('msgInput').value=''; autoGrow($('msgInput')); clearAttach();
+  $('msgInput').focus();
+
   try{
-    const res=await fbPush('messages/'+currentChannelId, msg);
-    const key=res.name;
-    $('msgInput').value=''; autoGrow($('msgInput')); clearAttach();
-    if(!messages.some(m=>m.key===key)){
-      const full={ key, ...msg }; messages.push(full); appendMessage(full,true);
-      if(msg.createdAt>(lastMsgTs||0)) lastMsgTs=msg.createdAt;
+    const res = await fbPush('messages/'+currentChannelId, msg);
+    const key = res.name;
+    // Заменяем временное на реальное
+    const idx = messages.findIndex(m => m.key === tempKey);
+    if(idx >= 0){
+      messages[idx] = { key, ...msg };
+      const el = document.querySelector('.msg[data-key="'+tempKey+'"]');
+      if(el){
+        el.setAttribute('data-key', key);
+        el.classList.remove('pending');
+        const st = el.querySelector('.send-status');
+        if(st) st.remove();
+      }
     }
-  }catch(e){ toast('Ошибка: '+e.message); }
-  finally{ btn.disabled=false; $('msgInput').focus(); }
+    if(msg.createdAt > (lastMsgTs||0)) lastMsgTs = msg.createdAt;
+  }catch(e){
+    toast('Не отправлено: '+e.message);
+    // помечаем ошибку
+    const el = document.querySelector('.msg[data-key="'+tempKey+'"]');
+    if(el){
+      el.classList.add('failed');
+      const st = el.querySelector('.send-status');
+      if(st) st.textContent = 'ошибка';
+    }
+    messages = messages.filter(m => m.key !== tempKey);
+  }finally{
+    btn.disabled=false;
+  }
+}
+
+function markPending(key, on){
+  const el = document.querySelector('.msg[data-key="'+key+'"]');
+  if(!el) return;
+  if(on){
+    el.classList.add('pending');
+    if(!el.querySelector('.send-status')){
+      const s = document.createElement('span');
+      s.className = 'send-status';
+      s.textContent = '…';
+      const head = el.querySelector('.head');
+      if(head) head.appendChild(s);
+    }
+  }
 }
 
 function onComposerKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(); } }
