@@ -8,217 +8,148 @@
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-database-compat.js"></script>
 <style>
 :root{
   --bg:#070707;--s1:#0e0e0e;--s2:#151515;--s3:#1a1a1a;--bd:#222;--bd2:#2a2a2a;
-  --tx:#f0f0f0;--mu:#888;--mu2:#555;--gn:#22c55e;--bl:#3b82f6;--yl:#eab308;--rd:#ef4444;
+  --tx:#f0f0f0;--mu:#888;--mu2:#555;--gn:#22c55e;--rd:#ef4444;
   --online:#22c55e;--idle:#eab308;--dnd:#ef4444;--offline:#555;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:Inter,system-ui,sans-serif;background:var(--bg);color:var(--tx);height:100vh;overflow:hidden}
 button,input,textarea,select{font-family:inherit}
-::-webkit-scrollbar{width:6px;height:6px}
-::-webkit-scrollbar-track{background:transparent}
-::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
-::-webkit-scrollbar-thumb:hover{background:#444}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
 
-/* ===== AUTH ===== */
+/* AUTH */
 #authScreen{position:fixed;inset:0;background:var(--bg);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px}
-.auth-box{width:100%;max-width:400px;background:var(--s1);border:1px solid var(--bd);border-radius:16px;padding:32px 28px}
+.auth-box{width:100%;max-width:380px;background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:32px 28px}
 .auth-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px;justify-content:center}
-.auth-logo .ic{width:40px;height:40px;border-radius:10px;background:var(--s2);border:1px solid var(--bd);display:grid;place-items:center;font-size:18px;color:var(--mu)}
-.auth-logo span{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px;letter-spacing:.04em}
-.auth-box h2{font-family:'Space Grotesk',sans-serif;font-size:1.4rem;font-weight:700;margin-bottom:6px;text-align:center}
-.auth-box .sub{color:var(--mu);font-size:13px;text-align:center;margin-bottom:24px}
+.auth-logo .ic{width:36px;height:36px;border-radius:9px;background:var(--s2);border:1px solid var(--bd);display:grid;place-items:center;font-size:15px;color:var(--mu)}
+.auth-logo span{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;letter-spacing:.06em}
+.auth-box h2{font-family:'Space Grotesk',sans-serif;font-size:1.35rem;font-weight:700;margin-bottom:6px;text-align:center}
+.auth-box .sub{color:var(--mu);font-size:13px;text-align:center;margin-bottom:22px}
 .fld{margin-bottom:14px}
-.fld label{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mu);margin-bottom:5px}
+.fld label{display:block;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:5px}
 .fld input{width:100%;background:var(--bg);border:1px solid var(--bd);border-radius:9px;padding:12px 14px;color:var(--tx);font-size:14px;outline:none}
 .fld input:focus{border-color:#3a3a3a}
-.btn{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase;padding:13px 20px;border-radius:11px;border:1px solid #333;background:#222;color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;transition:.15s;width:100%}
-.btn:hover:not(:disabled){background:#2e2e2e}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.btn-w{background:#fff;color:#000;border-color:#fff}
-.btn-w:hover:not(:disabled){background:#e8e8e8}
+.btn{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;letter-spacing:.05em;text-transform:uppercase;padding:13px 20px;border-radius:10px;border:1px solid #333;background:#222;color:#fff;cursor:pointer;width:100%;transition:.15s}
+.btn:hover:not(:disabled){background:#2e2e2e}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-w{background:#fff;color:#000;border-color:#fff}.btn-w:hover:not(:disabled){background:#e8e8e8}
 .auth-switch{text-align:center;margin-top:16px;font-size:13px;color:var(--mu)}
 .auth-switch a{color:var(--tx);cursor:pointer;text-decoration:underline}
-.auth-err{color:var(--rd);font-size:13px;text-align:center;margin-bottom:12px;min-height:18px}
+.auth-err{color:var(--rd);font-size:13px;text-align:center;margin-bottom:12px;min-height:18px;line-height:1.4}
 .auth-ok{color:var(--gn);font-size:13px;text-align:center;margin-bottom:12px}
 
-/* ===== APP SHELL ===== */
-#app{display:none;height:100vh;flex-direction:row}
+/* APP — sidebar like reference */
+#app{display:none;height:100vh}
 #app.on{display:flex}
-
-/* Server rail */
-.server-rail{width:72px;background:#050505;border-right:1px solid var(--bd);display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:8px;flex-shrink:0;overflow-y:auto}
-.srv-btn{width:48px;height:48px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);color:var(--mu);font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px;cursor:pointer;display:grid;place-items:center;transition:.15s;position:relative;overflow:hidden}
-.srv-btn:hover,.srv-btn.on{border-radius:16px;background:#fff;color:#000;border-color:#fff}
-.srv-btn img{width:100%;height:100%;object-fit:cover}
-.srv-btn .ind{position:absolute;left:-4px;width:4px;border-radius:0 4px 4px 0;background:#fff;transition:.15s;height:0}
-.srv-btn.on .ind{height:40px;top:4px}
-.srv-btn:hover .ind{height:20px;top:14px}
-.srv-sep{width:32px;height:1px;background:var(--bd);margin:4px 0}
-.srv-add{border-style:dashed;color:var(--gn);font-size:22px}
-.srv-add:hover{background:rgba(34,197,94,.15);color:var(--gn);border-color:var(--gn);border-radius:16px}
-
-/* Channels panel */
-.channels-panel{width:240px;background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0}
-.ch-header{padding:16px 16px 12px;border-bottom:1px solid var(--bd);cursor:pointer}
-.ch-header:hover{background:var(--s2)}
-.ch-header .srv-name{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.ch-header .srv-sub{font-size:11px;color:var(--mu2);margin-top:2px}
-.ch-list{flex:1;overflow-y:auto;padding:8px 8px 16px}
-.ch-cat{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu2);padding:12px 8px 4px;display:flex;justify-content:space-between;align-items:center}
-.ch-cat button{background:none;border:none;color:var(--mu2);cursor:pointer;font-size:14px;padding:0 4px}
-.ch-cat button:hover{color:var(--tx)}
-.ch-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;color:var(--mu);font-size:14px;font-weight:500;transition:.12s}
-.ch-item:hover{background:var(--s2);color:var(--tx)}
-.ch-item.on{background:var(--s3);color:var(--tx)}
-.ch-item .hash{color:var(--mu2);font-family:'JetBrains Mono',monospace;font-size:15px}
-.user-bar{padding:10px 12px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:10px;background:var(--s1)}
+.sidebar{width:220px;background:var(--s1);border-right:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0}
+.side-hdr{display:flex;align-items:center;gap:10px;padding:16px 14px;border-bottom:1px solid var(--bd)}
+.side-hdr .logo-i{width:28px;height:28px;border-radius:8px;background:var(--s2);border:1px solid var(--bd);display:grid;place-items:center;font-size:13px;color:var(--mu);flex-shrink:0}
+.side-hdr .logo-t{font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:12px;letter-spacing:.06em}
+.nav{flex:1;overflow-y:auto;padding:10px 10px 16px;display:flex;flex-direction:column;gap:3px}
+.nav-label{font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mu2);padding:10px 10px 6px;display:flex;justify-content:space-between;align-items:center}
+.nav-label button{background:none;border:none;color:var(--mu2);cursor:pointer;font-size:14px;padding:0 2px}
+.nav-label button:hover{color:#fff}
+.nav-btn{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:9px;cursor:pointer;color:var(--mu);font-size:13px;font-weight:500;border:none;background:transparent;width:100%;text-align:left;transition:.12s}
+.nav-btn:hover{background:var(--s2);color:var(--tx)}
+.nav-btn.on{background:#fff;color:#000}
+.nav-btn .num{font-family:'JetBrains Mono',monospace;font-size:11px;opacity:.5;min-width:18px}
+.user-bar{padding:12px;border-top:1px solid var(--bd);display:flex;align-items:center;gap:10px}
 .user-bar .av{width:32px;height:32px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);object-fit:cover;flex-shrink:0}
 .user-bar .info{flex:1;min-width:0}
 .user-bar .nm{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .user-bar .st{font-size:11px;color:var(--mu2);display:flex;align-items:center;gap:4px}
-.user-bar .st .dot{width:8px;height:8px;border-radius:50%}
-.user-bar .acts{display:flex;gap:4px}
+.user-bar .st .dot{width:7px;height:7px;border-radius:50%}
 .user-bar .acts button{background:none;border:none;color:var(--mu);cursor:pointer;padding:4px;font-size:14px;border-radius:4px}
 .user-bar .acts button:hover{background:var(--s2);color:var(--tx)}
 
-/* Main chat */
+/* MAIN */
 .main{flex:1;display:flex;flex-direction:column;min-width:0;background:var(--bg)}
-.chat-top{height:48px;border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 16px;gap:10px;flex-shrink:0}
+.chat-top{height:52px;border-bottom:1px solid var(--bd);display:flex;align-items:center;padding:0 18px;gap:10px;flex-shrink:0}
 .chat-top .hash{color:var(--mu2);font-size:18px;font-family:'JetBrains Mono',monospace}
 .chat-top .ch-title{font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:15px}
-.chat-top .ch-topic{font-size:12px;color:var(--mu);margin-left:8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.messages{flex:1;overflow-y:auto;padding:16px 16px 8px;display:flex;flex-direction:column}
+.chat-top .ch-topic{font-size:12px;color:var(--mu);margin-left:6px}
+.messages{flex:1;overflow-y:auto;padding:18px 18px 10px;display:flex;flex-direction:column}
 .msg-load{text-align:center;padding:12px;color:var(--mu2);font-size:12px;cursor:pointer}
 .msg-load:hover{color:var(--tx)}
 .msg{display:flex;gap:12px;padding:6px 8px;border-radius:8px;margin-bottom:2px}
 .msg:hover{background:rgba(255,255,255,.02)}
-.msg .av{width:40px;height:40px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);object-fit:cover;flex-shrink:0;cursor:pointer}
+.msg .av{width:38px;height:38px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);object-fit:cover;flex-shrink:0}
 .msg .body{flex:1;min-width:0}
 .msg .head{display:flex;align-items:baseline;gap:8px;margin-bottom:2px}
-.msg .author{font-weight:600;font-size:14px;cursor:pointer}
-.msg .author:hover{text-decoration:underline}
+.msg .author{font-weight:600;font-size:14px}
 .msg .time{font-size:11px;color:var(--mu2);font-family:'JetBrains Mono',monospace}
 .msg .content{font-size:14px;line-height:1.45;word-wrap:break-word;white-space:pre-wrap}
-.msg .content a{color:#7dd3fc;text-decoration:none}
-.msg .content a:hover{text-decoration:underline}
-.msg .attach{margin-top:8px;max-width:400px}
-.msg .attach img{max-width:100%;border-radius:8px;border:1px solid var(--bd);cursor:pointer}
-.msg .attach video{max-width:100%;border-radius:8px;border:1px solid var(--bd);background:#000}
-.msg .attach .vid-card{background:var(--s1);border:1px solid var(--bd);border-radius:10px;padding:12px;display:flex;align-items:center;gap:12px;cursor:pointer;max-width:360px}
-.msg .attach .vid-card:hover{border-color:#444}
-.msg .attach .vid-card .ic{width:40px;height:40px;border-radius:8px;background:var(--s2);display:grid;place-items:center;font-size:18px;color:var(--mu)}
-.msg .attach .vid-card .nm{font-size:13px;font-weight:600}
-.msg .attach .vid-card .sz{font-size:11px;color:var(--mu2)}
-.msg.system{justify-content:center;color:var(--mu2);font-size:13px;padding:8px}
+.msg .content a{color:#aaa;text-decoration:underline}
 .msg-day{text-align:center;margin:16px 0 8px;font-size:11px;color:var(--mu2);letter-spacing:.06em;text-transform:uppercase;position:relative}
 .msg-day span{background:var(--bg);padding:0 12px;position:relative;z-index:1}
 .msg-day::before{content:'';position:absolute;left:0;right:0;top:50%;height:1px;background:var(--bd)}
-
 .composer{padding:0 16px 16px;flex-shrink:0}
 .composer-box{background:var(--s1);border:1px solid var(--bd);border-radius:12px;padding:10px 12px;display:flex;align-items:flex-end;gap:8px}
-.composer-box textarea{flex:1;background:transparent;border:none;color:var(--tx);font-size:14px;resize:none;outline:none;max-height:160px;line-height:1.4;padding:4px 0}
-.composer-box .tools{display:flex;gap:4px;align-items:center}
-.composer-box .tools button{background:none;border:none;color:var(--mu);cursor:pointer;padding:6px;border-radius:6px;font-size:16px}
-.composer-box .tools button:hover{background:var(--s2);color:var(--tx)}
-.composer-box .send{background:#fff;color:#000;border:none;border-radius:8px;padding:8px 14px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;letter-spacing:.04em;cursor:pointer}
-.composer-box .send:hover{background:#e8e8e8}
-.composer-box .send:disabled{opacity:.4;cursor:not-allowed}
-.attach-preview{padding:8px 12px 0;display:flex;gap:8px;flex-wrap:wrap}
-.attach-preview .ap{position:relative;width:64px;height:64px;border-radius:8px;overflow:hidden;border:1px solid var(--bd);background:var(--s2)}
-.attach-preview .ap img,.attach-preview .ap video{width:100%;height:100%;object-fit:cover}
-.attach-preview .ap .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.7);border:none;color:#fff;width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:11px;display:grid;place-items:center}
+.composer-box textarea{flex:1;background:transparent;border:none;color:var(--tx);font-size:14px;resize:none;outline:none;max-height:140px;line-height:1.4;padding:4px 0}
+.composer-box .send{background:#fff;color:#000;border:none;border-radius:8px;padding:8px 14px;font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:12px;cursor:pointer}
+.composer-box .send:disabled{opacity:.35;cursor:not-allowed}
+.attach-preview{padding:8px 12px 0;display:flex;gap:8px}
+.attach-preview .ap{position:relative;width:56px;height:56px;border-radius:8px;overflow:hidden;border:1px solid var(--bd);background:var(--s2)}
+.attach-preview .ap img{width:100%;height:100%;object-fit:cover}
+.attach-preview .ap .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,.75);border:none;color:#fff;width:16px;height:16px;border-radius:50%;cursor:pointer;font-size:10px;display:grid;place-items:center}
 
-/* Members panel */
-.members-panel{width:220px;background:var(--s1);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0}
+/* Members */
+.members-panel{width:200px;background:var(--s1);border-left:1px solid var(--bd);display:flex;flex-direction:column;flex-shrink:0}
 .members-panel .hd{padding:16px;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--mu2);border-bottom:1px solid var(--bd)}
 .members-list{flex:1;overflow-y:auto;padding:8px}
-.mem-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px;cursor:pointer}
+.mem-item{display:flex;align-items:center;gap:10px;padding:6px 8px;border-radius:8px}
 .mem-item:hover{background:var(--s2)}
-.mem-item .av{width:32px;height:32px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);object-fit:cover;position:relative}
-.mem-item .av .dot{position:absolute;bottom:-1px;right:-1px;width:10px;height:10px;border-radius:50%;border:2px solid var(--s1)}
+.mem-item .av{width:30px;height:30px;border-radius:50%;background:var(--s2);border:1px solid var(--bd);position:relative;overflow:hidden}
+.mem-item .av img{width:100%;height:100%;object-fit:cover}
+.mem-item .av .dot{position:absolute;bottom:-1px;right:-1px;width:9px;height:9px;border-radius:50%;border:2px solid var(--s1)}
 .mem-item .nm{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .mem-item .role{font-size:10px;color:var(--mu2)}
 
 /* Modals */
 .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:500;display:none;align-items:center;justify-content:center;padding:20px}
 .modal-bg.on{display:flex}
-.modal{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:24px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto}
-.modal h3{font-family:'Space Grotesk',sans-serif;font-size:1.2rem;font-weight:700;margin-bottom:16px}
+.modal{background:var(--s1);border:1px solid var(--bd);border-radius:14px;padding:24px;max-width:420px;width:100%}
+.modal h3{font-family:'Space Grotesk',sans-serif;font-size:1.15rem;font-weight:700;margin-bottom:16px}
 .modal .actions{display:flex;gap:8px;justify-content:flex-end;margin-top:20px}
-.modal .actions .btn{width:auto;padding:10px 18px}
+.modal .actions .btn{width:auto;padding:10px 16px}
 
-/* Video player modal */
-#videoModal .modal{max-width:900px;padding:0;overflow:hidden;background:#000}
-#videoModal video{width:100%;max-height:80vh;display:block}
-#videoModal .vbar{padding:12px 16px;background:var(--s1);display:flex;justify-content:space-between;align-items:center}
-#videoModal .vbar span{font-size:13px;color:var(--mu)}
-
-/* Toast */
 .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--s2);border:1px solid var(--bd2);border-radius:10px;padding:12px 20px;font-size:13px;z-index:999;display:none;box-shadow:0 8px 32px rgba(0,0,0,.5)}
 .toast.on{display:block}
-
-/* Empty states */
 .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--mu);padding:40px;text-align:center}
-.empty h3{font-family:'Space Grotesk',sans-serif;font-size:1.3rem;color:var(--tx);margin-bottom:8px}
-.empty p{font-size:13px;max-width:320px;line-height:1.5}
+.empty h3{font-family:'Space Grotesk',sans-serif;font-size:1.25rem;color:var(--tx);margin-bottom:8px}
+.empty p{font-size:13px;max-width:300px;line-height:1.5}
 
-@media(max-width:900px){
-  .members-panel{display:none}
-  .channels-panel{width:200px}
-}
-@media(max-width:700px){
-  .server-rail{width:56px}
-  .channels-panel{display:none}
-  .channels-panel.mobile-open{display:flex;position:fixed;left:56px;top:0;bottom:0;z-index:50;width:240px}
-}
+@media(max-width:900px){.members-panel{display:none}}
+@media(max-width:700px){.sidebar{width:64px}.sidebar .logo-t,.sidebar .nav-btn .lbl,.sidebar .nav-label span,.user-bar .info{display:none}.nav-btn{justify-content:center}}
 </style>
 </head>
 <body>
 
-<!-- AUTH -->
 <div id="authScreen">
-  <div class="auth-box" id="authBox">
+  <div class="auth-box">
     <div class="auth-logo"><div class="ic">◎</div><span>INTEL CONNECT</span></div>
     <h2 id="authTitle">Вход</h2>
-    <p class="sub" id="authSub">Введите ник и пароль</p>
+    <p class="sub" id="authSub">Ник и пароль</p>
     <div class="auth-err" id="authErr"></div>
     <div class="auth-ok" id="authOk"></div>
-
-    <div class="fld"><label>Ник</label><input id="authNick" type="text" placeholder="username" maxlength="32" autocomplete="username"/></div>
-    <div class="fld"><label>Пароль</label><input id="authPass" type="password" placeholder="••••••••" autocomplete="current-password"/></div>
-    <div class="fld" id="pass2Fld" style="display:none"><label>Повторите пароль</label><input id="authPass2" type="password" placeholder="••••••••" autocomplete="new-password"/></div>
-
+    <div class="fld"><label>Ник</label><input id="authNick" type="text" placeholder="nickname" maxlength="24" autocomplete="username"/></div>
+    <div class="fld"><label>Пароль</label><input id="authPass" type="password" placeholder="••••••••" maxlength="64" autocomplete="current-password"/></div>
+    <div class="fld" id="pass2Fld" style="display:none"><label>Повторите пароль</label><input id="authPass2" type="password" placeholder="••••••••" maxlength="64"/></div>
     <button class="btn btn-w" id="btnAuth" onclick="doAuth()">Войти</button>
-
-    <div class="auth-switch" id="authSwitch">
-      Нет аккаунта? <a onclick="toggleAuthMode()">Регистрация</a>
-    </div>
+    <div class="auth-switch" id="authSwitch">Нет аккаунта? <a onclick="toggleAuthMode()">Регистрация</a></div>
   </div>
 </div>
 
-<!-- APP -->
 <div id="app">
-  <!-- Servers -->
-  <div class="server-rail" id="serverRail">
-    <button class="srv-btn" title="Личные сообщения" onclick="openDMs()" id="btnDMs">◎</button>
-    <div class="srv-sep"></div>
-    <div id="serverList"></div>
-    <div class="srv-sep"></div>
-    <button class="srv-btn srv-add" title="Создать сервер" onclick="openCreateServer()">+</button>
-  </div>
-
-  <!-- Channels -->
-  <div class="channels-panel" id="channelsPanel">
-    <div class="ch-header" onclick="openServerSettings()">
-      <div class="srv-name" id="curServerName">Выберите сервер</div>
-      <div class="srv-sub" id="curServerSub">—</div>
+  <div class="sidebar">
+    <div class="side-hdr">
+      <div class="logo-i">◎</div>
+      <div class="logo-t">INTEL CONNECT</div>
     </div>
-    <div class="ch-list" id="channelList"></div>
+    <div class="nav" id="channelNav">
+      <div class="nav-label"><span>Каналы</span><button id="btnAddCh" title="Создать канал" onclick="openCreateChannel()" style="display:none">+</button></div>
+    </div>
     <div class="user-bar">
       <img class="av" id="myAv" src="" alt=""/>
       <div class="info">
@@ -226,58 +157,41 @@ button,input,textarea,select{font-family:inherit}
         <div class="st"><span class="dot" id="myDot" style="background:var(--online)"></span><span id="myStatus">Online</span></div>
       </div>
       <div class="acts">
-        <button title="Настройки" onclick="openProfileSettings()">⚙</button>
+        <button title="Профиль" onclick="openProfile()">⚙</button>
         <button title="Выйти" onclick="logout()">⏻</button>
       </div>
     </div>
   </div>
 
-  <!-- Chat -->
   <div class="main">
     <div class="chat-top">
       <span class="hash">#</span>
-      <span class="ch-title" id="curChannelName">канал</span>
+      <span class="ch-title" id="curChannelName">general</span>
       <span class="ch-topic" id="curChannelTopic"></span>
     </div>
     <div class="messages" id="messages" onscroll="onMessagesScroll()">
-      <div class="empty" id="emptyState">
-        <h3>INTEL CONNECT</h3>
-        <p>Выберите сервер слева или создайте новый. Сообщения загружаются по 20 штук.</p>
-      </div>
+      <div class="empty" id="emptyState"><h3>INTEL CONNECT</h3><p>Загрузка…</p></div>
     </div>
     <div class="composer" id="composer" style="display:none">
       <div class="attach-preview" id="attachPreview"></div>
       <div class="composer-box">
-        <button class="tools" onclick="document.getElementById('fileInput').click()" title="Прикрепить" style="background:none;border:none;color:var(--mu);cursor:pointer;padding:6px;font-size:18px">＋</button>
-        <textarea id="msgInput" rows="1" placeholder="Написать в #канал..." onkeydown="onComposerKey(event)" oninput="autoGrow(this)"></textarea>
+        <button onclick="document.getElementById('fileInput').click()" style="background:none;border:none;color:var(--mu);cursor:pointer;padding:6px;font-size:18px" title="Файл">＋</button>
+        <textarea id="msgInput" rows="1" placeholder="Написать сообщение…" onkeydown="onComposerKey(event)" oninput="autoGrow(this)"></textarea>
         <button class="send" id="sendBtn" onclick="sendMessage()">Отправить</button>
       </div>
-      <input type="file" id="fileInput" accept="image/*,video/*,.pdf,.txt,.zip" style="display:none" onchange="onFileSelected(event)"/>
+      <input type="file" id="fileInput" accept="image/*,.pdf,.txt,.zip" style="display:none" onchange="onFileSelected(event)"/>
     </div>
   </div>
 
-  <!-- Members -->
-  <div class="members-panel" id="membersPanel">
-    <div class="hd">Участники — <span id="memberCount">0</span></div>
+  <div class="members-panel">
+    <div class="hd">Онлайн — <span id="memberCount">0</span></div>
     <div class="members-list" id="membersList"></div>
-  </div>
-</div>
-
-<!-- Modals -->
-<div class="modal-bg" id="modalCreateServer">
-  <div class="modal">
-    <h3>Создать сервер</h3>
-    <div class="fld"><label>Название</label><input id="newServerName" type="text" placeholder="Мой сервер" maxlength="48"/></div>
-    <div class="actions">
-      <button class="btn" onclick="closeModal('modalCreateServer')">Отмена</button>
-      <button class="btn btn-w" onclick="createServer()">Создать</button>
-    </div>
   </div>
 </div>
 
 <div class="modal-bg" id="modalCreateChannel">
   <div class="modal">
-    <h3>Создать канал</h3>
+    <h3>Новый канал</h3>
     <div class="fld"><label>Название</label><input id="newChannelName" type="text" placeholder="general" maxlength="32"/></div>
     <div class="actions">
       <button class="btn" onclick="closeModal('modalCreateChannel')">Отмена</button>
@@ -285,717 +199,448 @@ button,input,textarea,select{font-family:inherit}
     </div>
   </div>
 </div>
-
 <div class="modal-bg" id="modalProfile">
   <div class="modal">
     <h3>Профиль</h3>
     <div class="fld"><label>Отображаемое имя</label><input id="profName" type="text" maxlength="32"/></div>
-    <div class="fld"><label>Статус</label>
-      <select id="profStatus">
-        <option value="online">Online</option>
-        <option value="idle">Idle</option>
-        <option value="dnd">Do Not Disturb</option>
-        <option value="offline">Invisible</option>
-      </select>
-    </div>
-    <div class="fld"><label>URL аватара (опционально)</label><input id="profAvatar" type="url" placeholder="https://..."/></div>
+    <div class="fld"><label>URL аватара</label><input id="profAvatar" type="url" placeholder="https://..."/></div>
     <div class="actions">
       <button class="btn" onclick="closeModal('modalProfile')">Отмена</button>
       <button class="btn btn-w" onclick="saveProfile()">Сохранить</button>
     </div>
   </div>
 </div>
-
-<div class="modal-bg" id="modalServerSettings">
-  <div class="modal">
-    <h3>Настройки сервера</h3>
-    <div class="fld"><label>Название</label><input id="setServerName" type="text" maxlength="48"/></div>
-    <div class="fld"><label>Код приглашения</label><input id="setInviteCode" type="text" readonly style="font-family:'JetBrains Mono',monospace"/></div>
-    <div class="fld"><label>Роли</label>
-      <div id="rolesList" style="font-size:13px;color:var(--mu);line-height:1.6"></div>
-    </div>
-    <div class="actions">
-      <button class="btn" onclick="closeModal('modalServerSettings')">Закрыть</button>
-      <button class="btn btn-w" onclick="saveServerSettings()">Сохранить</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-bg" id="modalJoin">
-  <div class="modal">
-    <h3>Присоединиться по коду</h3>
-    <div class="fld"><label>Код приглашения</label><input id="joinCode" type="text" placeholder="ABC123" style="text-transform:uppercase"/></div>
-    <div class="actions">
-      <button class="btn" onclick="closeModal('modalJoin')">Отмена</button>
-      <button class="btn btn-w" onclick="joinByCode()">Войти</button>
-    </div>
-  </div>
-</div>
-
-<div class="modal-bg" id="videoModal">
-  <div class="modal">
-    <video id="videoPlayer" controls playsinline></video>
-    <div class="vbar">
-      <span id="videoTitle">Видео</span>
-      <button class="btn" style="width:auto;padding:8px 14px" onclick="closeVideo()">Закрыть</button>
-    </div>
-  </div>
-</div>
-
 <div class="toast" id="toast"></div>
 
 <script>
 /* ========== CONFIG ========== */
-const FB_URL = 'https://intell-a2b60-default-rtdb.firebaseio.com';
-const PAGE_SIZE = 20;
+const FB_BASE = 'https://intell-a2b60-default-rtdb.firebaseio.com';
+const FB_SECRET = 'x4aVe5AMCLlhGP0rMQfIMzI9qFyKErbFZULo49eP';
+/* Ник владельца — только он создаёт каналы. Поставь свой ник: */
+const OWNER_NICK = 'admin';
+const PAGE_SIZE = 30;
+const POLL_MS = 2500;
 
-firebase.initializeApp({ databaseURL: FB_URL });
-const db = firebase.database();
+function fbUrl(path){
+  const p = path.startsWith('/') ? path : '/' + path;
+  const base = p.includes('.json') ? FB_BASE + p : FB_BASE + p + '.json';
+  return base + (base.includes('?') ? '&' : '?') + 'auth=' + encodeURIComponent(FB_SECRET);
+}
+async function fbGet(path){
+  const r = await fetch(fbUrl(path), { cache:'no-store' });
+  if(!r.ok) throw new Error('Сеть ' + r.status);
+  return r.json();
+}
+async function fbSet(path, data){
+  const r = await fetch(fbUrl(path), { method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  if(!r.ok) throw new Error('Запись ' + r.status);
+  return r.json();
+}
+async function fbUpdate(path, data){
+  const r = await fetch(fbUrl(path), { method:'PATCH', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  if(!r.ok) throw new Error('Обновление ' + r.status);
+  return r.json();
+}
+async function fbPush(path, data){
+  const r = await fetch(fbUrl(path), { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(data) });
+  if(!r.ok) throw new Error('Отправка ' + r.status);
+  return r.json();
+}
+async function fbQuery(path, params){
+  const q = Object.entries(params).map(([k,v]) => k + '=' + encodeURIComponent(v)).join('&');
+  const url = FB_BASE + '/' + path + '.json?auth=' + encodeURIComponent(FB_SECRET) + '&' + q;
+  const r = await fetch(url, { cache:'no-store' });
+  if(!r.ok) throw new Error('Запрос ' + r.status);
+  return r.json();
+}
 
-/* ========== STATE ========== */
-let me = null;               // { uid, nick, displayName, avatar, status }
-let currentServerId = null;
+let me = null;
+let channels = {};
 let currentChannelId = null;
-let serversCache = {};
-let channelsCache = {};
-let membersCache = {};
-let messages = [];           // chronological oldest → newest
-let oldestKey = null;
+let messages = [];
 let oldestTs = null;
-let loadingOlder = false;
 let hasMore = true;
-let msgListener = null;
-let pendingAttach = null;    // { type, dataUrl, name, size }
-let authMode = 'login';      // login | register
+let loadingOlder = false;
+let pendingAttach = null;
+let authMode = 'login';
+let authBusy = false;
+let pollTimer = null;
+let lastMsgTs = 0;
+let onlineUsers = {};
 
-/* ========== UTILS ========== */
 function $(id){ return document.getElementById(id); }
-function toast(t, ms=2800){ const el=$('toast'); el.textContent=t; el.classList.add('on'); setTimeout(()=>el.classList.remove('on'), ms); }
+function toast(t, ms=3000){ const el=$('toast'); el.textContent=t; el.classList.add('on'); clearTimeout(el._t); el._t=setTimeout(()=>el.classList.remove('on'), ms); }
 function uid(){ return 'u_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
-function mid(){ return 'm_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
-function sid(){ return 's_'+Math.random().toString(36).slice(2,8); }
-function inviteCode(){ return Math.random().toString(36).slice(2,8).toUpperCase(); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtTime(ts){
   if(!ts) return '';
-  const d=new Date(ts);
-  const now=new Date();
-  if(d.toDateString()===now.toDateString()) return d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
+  const d=new Date(ts), n=new Date();
+  if(d.toDateString()===n.toDateString()) return d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
   return d.toLocaleDateString('ru-RU',{day:'numeric',month:'short'})+' '+d.toLocaleTimeString('ru-RU',{hour:'2-digit',minute:'2-digit'});
 }
 function dayKey(ts){ const d=new Date(ts); return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate(); }
-function statusColor(s){ return ({online:'var(--online)',idle:'var(--idle)',dnd:'var(--dnd)',offline:'var(--offline)'})[s]||'var(--offline)'; }
+function isOwner(){ return me && (me.username||'').toLowerCase() === OWNER_NICK.toLowerCase(); }
 
-/* Simple hash for password (not secure, but better than plaintext in RTDB demo) */
-async function hashPass(pass, salt){
-  const enc = new TextEncoder();
-  const data = enc.encode(salt + '::' + pass + '::intelconnect');
-  const buf = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+function simpleHash(str){
+  let h=2166136261,h2=0x811c9dc5;
+  for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); }
+  for(let i=str.length-1;i>=0;i--){ h2^=str.charCodeAt(i); h2=Math.imul(h2,16777619); }
+  let out=(h>>>0).toString(16).padStart(8,'0')+(h2>>>0).toString(16).padStart(8,'0');
+  for(let r=0;r<3;r++){ let x=0; for(let i=0;i<out.length;i++) x=Math.imul(x^out.charCodeAt(i),0x01000193); out+=(x>>>0).toString(16).padStart(8,'0'); }
+  return out;
 }
-function makeSalt(){ return Math.random().toString(36).slice(2)+Date.now().toString(36); }
-function nickKey(nick){ return nick.toLowerCase().replace(/[.#$\[\]\/]/g,'_'); }
+async function hashPassword(password, salt){
+  try{
+    if(window.crypto && crypto.subtle){
+      const buf=new TextEncoder().encode(salt+'::'+password+'::intel');
+      const hash=await crypto.subtle.digest('SHA-256', buf);
+      return Array.from(new Uint8Array(hash)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(e){}
+  return simpleHash(salt+'::'+password+'::intel');
+}
+function makeSalt(){
+  try{
+    if(window.crypto && crypto.getRandomValues){
+      const a=new Uint8Array(16); crypto.getRandomValues(a);
+      return Array.from(a).map(b=>b.toString(16).padStart(2,'0')).join('');
+    }
+  }catch(e){}
+  return Math.random().toString(36).slice(2)+Date.now().toString(36);
+}
 
-/* ========== AUTH ========== */
 function toggleAuthMode(){
+  if(authBusy) return;
   authMode = authMode==='login'?'register':'login';
   $('authTitle').textContent = authMode==='login'?'Вход':'Регистрация';
-  $('authSub').textContent = authMode==='login'?'Введите ник и пароль':'Придумайте ник и пароль';
+  $('authSub').textContent = authMode==='login'?'Ник и пароль':'Создайте аккаунт';
   $('pass2Fld').style.display = authMode==='register'?'block':'none';
   $('btnAuth').textContent = authMode==='login'?'Войти':'Зарегистрироваться';
   $('authSwitch').innerHTML = authMode==='login'
     ? 'Нет аккаунта? <a onclick="toggleAuthMode()">Регистрация</a>'
-    : 'Уже есть аккаунт? <a onclick="toggleAuthMode()">Вход</a>';
-  $('authErr').textContent='';
-  $('authOk').textContent='';
+    : 'Уже есть? <a onclick="toggleAuthMode()">Вход</a>';
+  $('authErr').textContent=''; $('authOk').textContent='';
+  $('authPass').value=''; $('authPass2').value='';
 }
 
 async function doAuth(){
-  const nick = $('authNick').value.trim();
-  const pass = $('authPass').value;
-  const pass2 = $('authPass2').value;
-  $('authErr').textContent='';
-  $('authOk').textContent='';
+  if(authBusy) return;
+  const nick=$('authNick').value.trim(), pass=$('authPass').value, pass2=$('authPass2').value;
+  $('authErr').textContent=''; $('authOk').textContent='';
+  if(!nick||nick.length<2){ $('authErr').textContent='Ник минимум 2 символа'; return; }
+  if(!/^[a-zA-Z0-9_\-а-яёА-ЯЁ]+$/.test(nick)){ $('authErr').textContent='Ник: буквы, цифры, _ -'; return; }
+  if(!pass||pass.length<4){ $('authErr').textContent='Пароль минимум 4 символа'; return; }
+  if(authMode==='register'&&pass!==pass2){ $('authErr').textContent='Пароли не совпадают'; return; }
 
-  if(!nick || nick.length<2){ $('authErr').textContent='Ник минимум 2 символа'; return; }
-  if(!/^[a-zA-Z0-9_\-\.]+$/.test(nick)){ $('authErr').textContent='Ник: только латиница, цифры, _ - .'; return; }
-  if(!pass || pass.length<4){ $('authErr').textContent='Пароль минимум 4 символа'; return; }
-  if(authMode==='register' && pass!==pass2){ $('authErr').textContent='Пароли не совпадают'; return; }
-
-  const btn = $('btnAuth');
-  btn.disabled=true; btn.textContent='Проверка…';
+  authBusy=true;
+  const btn=$('btnAuth'); btn.disabled=true;
+  btn.textContent=authMode==='login'?'Вход…':'Регистрация…';
+  const nickKey=nick.toLowerCase();
 
   try{
-    const key = nickKey(nick);
-
     if(authMode==='register'){
-      // Check if nick taken
-      const exist = await db.ref('nicks/'+key).once('value');
-      if(exist.val()){
-        $('authErr').textContent='Этот ник уже занят';
-        return;
-      }
-      const userId = uid();
-      const salt = makeSalt();
-      const hash = await hashPass(pass, salt);
-      const userData = {
-        nick,
-        displayName: nick,
-        avatar: '',
-        status: 'online',
-        salt,
-        hash,
-        createdAt: Date.now(),
-        lastLogin: Date.now()
-      };
-      await db.ref('users/'+userId).set(userData);
-      await db.ref('nicks/'+key).set(userId);
-      me = { uid: userId, ...userData };
-      localStorage.setItem('ic_session', JSON.stringify({ uid: userId, nick, ts: Date.now() }));
+      const existing=await fbGet('usernames/'+nickKey);
+      if(existing){ $('authErr').textContent='Ник занят'; return; }
+      const salt=makeSalt(), passwordHash=await hashPassword(pass,salt), userId=uid();
+      const userData={ username:nick, displayName:nick, passwordHash, salt, avatar:'', status:'online', createdAt:Date.now(), lastLogin:Date.now() };
+      await fbSet('users/'+userId, userData);
+      await fbSet('usernames/'+nickKey, userId);
+      me={ uid:userId, ...userData };
+      try{ localStorage.setItem('ic_session', JSON.stringify({ uid:userId, ts:Date.now() })); }catch(e){}
+      $('authOk').textContent='Готово!';
       enterApp();
-      return;
+    }else{
+      const userId=await fbGet('usernames/'+nickKey);
+      if(!userId){ $('authErr').textContent='Пользователь не найден'; return; }
+      const userData=await fbGet('users/'+userId);
+      if(!userData||!userData.passwordHash){ $('authErr').textContent='Ошибка данных'; return; }
+      const check=await hashPassword(pass, userData.salt);
+      if(check!==userData.passwordHash){ $('authErr').textContent='Неверный пароль'; return; }
+      try{ await fbUpdate('users/'+userId, { status:'online', lastLogin:Date.now() }); }catch(e){}
+      me={ uid:userId, ...userData, status:'online' };
+      try{ localStorage.setItem('ic_session', JSON.stringify({ uid:userId, ts:Date.now() })); }catch(e){}
+      enterApp();
     }
-
-    // login
-    const nickSnap = await db.ref('nicks/'+key).once('value');
-    const userId = nickSnap.val();
-    if(!userId){
-      $('authErr').textContent='Пользователь не найден';
-      return;
-    }
-    const userSnap = await db.ref('users/'+userId).once('value');
-    const u = userSnap.val();
-    if(!u){ $('authErr').textContent='Пользователь не найден'; return; }
-    const hash = await hashPass(pass, u.salt||'');
-    if(hash !== u.hash){
-      $('authErr').textContent='Неверный пароль';
-      return;
-    }
-    await db.ref('users/'+userId).update({ status:'online', lastLogin: Date.now() });
-    me = { uid: userId, ...u, status:'online' };
-    localStorage.setItem('ic_session', JSON.stringify({ uid: userId, nick, ts: Date.now() }));
-    enterApp();
   }catch(e){
     console.error(e);
-    $('authErr').textContent='Ошибка: '+e.message;
+    $('authErr').textContent='Ошибка: '+(e.message||e);
   }finally{
-    btn.disabled=false;
-    btn.textContent = authMode==='login'?'Войти':'Зарегистрироваться';
+    authBusy=false; btn.disabled=false;
+    btn.textContent=authMode==='login'?'Войти':'Зарегистрироваться';
   }
 }
 
 async function tryRestoreSession(){
   try{
-    const raw = localStorage.getItem('ic_session');
+    const raw=localStorage.getItem('ic_session');
     if(!raw) return false;
-    const s = JSON.parse(raw);
-    if(!s.uid || Date.now()-s.ts > 30*24*60*60*1000) return false;
-    const snap = await db.ref('users/'+s.uid).once('value');
-    const u = snap.val();
+    const s=JSON.parse(raw);
+    if(!s.uid||Date.now()-s.ts>30*24*60*60*1000) return false;
+    const u=await fbGet('users/'+s.uid);
     if(!u) return false;
-    me = { uid: s.uid, ...u, status:'online' };
-    await db.ref('users/'+s.uid).update({ status:'online', lastLogin: Date.now() });
+    me={ uid:s.uid, ...u };
+    try{ await fbUpdate('users/'+s.uid, { status:'online', lastLogin:Date.now() }); }catch(e){}
     return true;
   }catch(e){ return false; }
 }
 
 function logout(){
-  if(me) db.ref('users/'+me.uid).update({ status:'offline' }).catch(()=>{});
+  if(me) fbUpdate('users/'+me.uid, { status:'offline' }).catch(()=>{});
   localStorage.removeItem('ic_session');
-  me=null;
-  if(msgListener){ try{ db.ref(msgListener.path).off('child_added', msgListener.cb); }catch(e){} msgListener=null; }
-  location.reload();
+  me=null; stopPoll(); location.reload();
 }
 
-/* ========== APP BOOT ========== */
 async function enterApp(){
   $('authScreen').style.display='none';
   $('app').classList.add('on');
-  $('myName').textContent = me.displayName||me.nick;
-  $('myStatus').textContent = (me.status||'online');
-  $('myDot').style.background = statusColor(me.status||'online');
-  if(me.avatar) $('myAv').src = me.avatar;
-  else $('myAv').src = 'https://api.dicebear.com/7.x/identicon/svg?seed='+encodeURIComponent(me.uid);
-
-  await loadMyServers();
-  const ids = Object.keys(serversCache);
-  if(ids.length) selectServer(ids[0]);
+  $('myName').textContent=me.displayName||me.username||'User';
+  $('myStatus').textContent=me.status||'online';
+  $('myDot').style.background='var(--online)';
+  $('myAv').src=me.avatar||('https://api.dicebear.com/7.x/identicon/svg?seed='+encodeURIComponent(me.uid));
+  if(isOwner()) $('btnAddCh').style.display='inline';
+  await ensureDefaultChannel();
+  await loadChannels();
+  loadOnline();
+  setInterval(loadOnline, 15000);
 }
 
-async function loadMyServers(){
-  const snap = await db.ref('servers').once('value');
-  serversCache = {};
-  const all = snap.val()||{};
-  for(const [id,s] of Object.entries(all)){
-    if(s.members && s.members[me.uid]){
-      serversCache[id]=s;
-    }
+async function ensureDefaultChannel(){
+  const chs=await fbGet('channels')||{};
+  if(!Object.keys(chs).length){
+    await fbSet('channels/ch_general', { name:'general', topic:'Общий чат', position:0, createdAt:Date.now() });
   }
-  renderServerRail();
 }
 
-function renderServerRail(){
-  const box = $('serverList');
-  box.innerHTML = '';
-  for(const [id,s] of Object.entries(serversCache)){
-    const btn = document.createElement('button');
-    btn.className = 'srv-btn'+(id===currentServerId?' on':'');
-    btn.title = s.name||'Server';
-    btn.innerHTML = '<span class="ind"></span>'+(s.icon
-      ? '<img src="'+esc(s.icon)+'" alt=""/>'
-      : esc((s.name||'S').slice(0,2).toUpperCase()));
-    btn.onclick = ()=>selectServer(id);
-    box.appendChild(btn);
-  }
-  const joinBtn = document.createElement('button');
-  joinBtn.className='srv-btn';
-  joinBtn.title='Присоединиться по коду';
-  joinBtn.textContent='↘';
-  joinBtn.style.fontSize='16px';
-  joinBtn.onclick=()=>openModal('modalJoin');
-  box.appendChild(joinBtn);
+async function loadChannels(){
+  channels=await fbGet('channels')||{};
+  renderChannelNav();
+  const sorted=Object.entries(channels).sort((a,b)=>(a[1].position||0)-(b[1].position||0));
+  if(sorted.length) selectChannel(sorted[0][0]);
 }
 
-/* ========== SERVERS / CHANNELS ========== */
-function openCreateServer(){ openModal('modalCreateServer'); $('newServerName').value=''; $('newServerName').focus(); }
-function openCreateChannel(){ if(!currentServerId) return; openModal('modalCreateChannel'); $('newChannelName').value=''; $('newChannelName').focus(); }
+function renderChannelNav(){
+  const nav=$('channelNav');
+  const label=nav.querySelector('.nav-label');
+  nav.innerHTML='';
+  nav.appendChild(label);
+  const sorted=Object.entries(channels).sort((a,b)=>(a[1].position||0)-(b[1].position||0));
+  sorted.forEach(([id,ch],i)=>{
+    const btn=document.createElement('button');
+    btn.className='nav-btn'+(id===currentChannelId?' on':'');
+    btn.innerHTML='<span class="num">'+String(i+1).padStart(2,'0')+'</span><span class="lbl">'+esc(ch.name)+'</span>';
+    btn.onclick=()=>selectChannel(id);
+    nav.appendChild(btn);
+  });
+}
 
-async function createServer(){
-  const name = $('newServerName').value.trim();
-  if(!name){ toast('Введите название'); return; }
-  const id = sid();
-  const code = inviteCode();
-  const server = {
-    name,
-    icon: '',
-    ownerId: me.uid,
-    invite: code,
-    createdAt: Date.now(),
-    members: { [me.uid]: { role: 'owner', joinedAt: Date.now() } },
-    roles: {
-      owner: { name:'Owner', perms:['*'], color:'#eab308' },
-      admin: { name:'Admin', perms:['manage_channels','kick','delete_messages'], color:'#ef4444' },
-      member: { name:'Member', perms:['send_messages'], color:'#888' }
-    },
-    channels: {
-      'ch_general': { name:'general', type:'text', position:0, topic:'Общий чат' }
-    }
-  };
-  await db.ref('servers/'+id).set(server);
-  serversCache[id]=server;
-  closeModal('modalCreateServer');
-  renderServerRail();
-  selectServer(id);
-  toast('Сервер создан · код: '+code);
+function openCreateChannel(){
+  if(!isOwner()){ toast('Только владелец может создавать каналы'); return; }
+  openModal('modalCreateChannel');
+  $('newChannelName').value='';
+  setTimeout(()=>$('newChannelName').focus(),30);
 }
 
 async function createChannel(){
-  const name = $('newChannelName').value.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-_а-яё]/gi,'');
-  if(!name || !currentServerId) return;
-  const chId = 'ch_'+Math.random().toString(36).slice(2,8);
-  const ch = { name, type:'text', position: Date.now(), topic:'' };
-  await db.ref('servers/'+currentServerId+'/channels/'+chId).set(ch);
-  if(!serversCache[currentServerId].channels) serversCache[currentServerId].channels={};
-  serversCache[currentServerId].channels[chId]=ch;
-  closeModal('modalCreateChannel');
-  renderChannels();
-  selectChannel(chId);
-  toast('Канал #'+name+' создан');
+  if(!isOwner()){ toast('Нет прав'); return; }
+  let name=$('newChannelName').value.trim().toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9\-_а-яё]/gi,'');
+  if(!name) return;
+  const chId='ch_'+Math.random().toString(36).slice(2,8);
+  const ch={ name, topic:'', position:Date.now(), createdAt:Date.now() };
+  try{
+    await fbSet('channels/'+chId, ch);
+    channels[chId]=ch;
+    closeModal('modalCreateChannel');
+    renderChannelNav();
+    selectChannel(chId);
+    toast('Канал #'+name+' создан');
+  }catch(e){ toast(e.message); }
 }
 
-async function joinByCode(){
-  const code = $('joinCode').value.trim().toUpperCase();
-  if(!code) return;
-  const snap = await db.ref('servers').once('value');
-  const all = snap.val()||{};
-  let foundId=null, found=null;
-  for(const [id,s] of Object.entries(all)){
-    if(s.invite===code){ foundId=id; found=s; break; }
-  }
-  if(!found){ toast('Код не найден'); return; }
-  if(found.members && found.members[me.uid]){ toast('Вы уже на сервере'); closeModal('modalJoin'); selectServer(foundId); return; }
-  await db.ref('servers/'+foundId+'/members/'+me.uid).set({ role:'member', joinedAt: Date.now() });
-  if(!found.members) found.members={};
-  found.members[me.uid]={ role:'member', joinedAt: Date.now() };
-  serversCache[foundId]=found;
-  closeModal('modalJoin');
-  renderServerRail();
-  selectServer(foundId);
-  toast('Вы присоединились к «'+found.name+'»');
-}
-
-function selectServer(id){
-  currentServerId=id;
-  currentChannelId=null;
-  renderServerRail();
-  const s = serversCache[id];
-  $('curServerName').textContent = s?.name||'Server';
-  $('curServerSub').textContent = Object.keys(s?.members||{}).length+' участников';
-  renderChannels();
-  renderMembers();
-  const chs = s?.channels||{};
-  const first = Object.keys(chs).sort((a,b)=>(chs[a].position||0)-(chs[b].position||0))[0];
-  if(first) selectChannel(first);
-  else {
-    $('messages').innerHTML='<div class="empty"><h3>Нет каналов</h3><p>Создайте первый текстовый канал.</p></div>';
-    $('composer').style.display='none';
-  }
-}
-
-function renderChannels(){
-  const s = serversCache[currentServerId];
-  const box = $('channelList');
-  if(!s){ box.innerHTML=''; return; }
-  const chs = s.channels||{};
-  const sorted = Object.entries(chs).sort((a,b)=>(a[1].position||0)-(b[1].position||0));
-  let html = `<div class="ch-cat"><span>Текстовые каналы</span><button title="Создать канал" onclick="openCreateChannel()">+</button></div>`;
-  for(const [id,ch] of sorted){
-    html += `<div class="ch-item ${id===currentChannelId?'on':''}" onclick="selectChannel('${id}')">
-      <span class="hash">#</span><span>${esc(ch.name)}</span>
-    </div>`;
-  }
-  box.innerHTML = html;
-}
-
-function renderMembers(){
-  const s = serversCache[currentServerId];
-  const box = $('membersList');
-  if(!s){ box.innerHTML=''; $('memberCount').textContent='0'; return; }
-  const mems = s.members||{};
-  $('memberCount').textContent = Object.keys(mems).length;
-  const ids = Object.keys(mems);
-  Promise.all(ids.map(id=>db.ref('users/'+id).once('value').then(sn=>({id, ...(sn.val()||{})}))))
-    .then(list=>{
-      list.sort((a,b)=>{
-        const ra = mems[a.id]?.role||'member';
-        const rb = mems[b.id]?.role||'member';
-        const order={owner:0,admin:1,member:2};
-        return (order[ra]??3)-(order[rb]??3) || (a.displayName||'').localeCompare(b.displayName||'');
-      });
-      box.innerHTML = list.map(u=>{
-        const role = mems[u.id]?.role||'member';
-        const av = u.avatar || ('https://api.dicebear.com/7.x/identicon/svg?seed='+encodeURIComponent(u.id));
-        return `<div class="mem-item">
-          <div class="av"><img src="${esc(av)}" style="width:100%;height:100%;border-radius:50%;object-fit:cover" onerror="this.style.display='none'"/><span class="dot" style="background:${statusColor(u.status||'offline')}"></span></div>
-          <div style="min-width:0"><div class="nm">${esc(u.displayName||u.nick||u.id)}</div><div class="role">${esc(role)}</div></div>
-        </div>`;
-      }).join('');
-    });
-}
-
-/* ========== MESSAGES ========== */
 function selectChannel(chId){
-  currentChannelId = chId;
-  const ch = serversCache[currentServerId]?.channels?.[chId];
-  $('curChannelName').textContent = ch?.name||'channel';
-  $('curChannelTopic').textContent = ch?.topic||'';
-  $('msgInput').placeholder = 'Написать в #'+(ch?.name||'канал')+'…';
-  renderChannels();
+  currentChannelId=chId;
+  const ch=channels[chId]||{};
+  $('curChannelName').textContent=ch.name||'channel';
+  $('curChannelTopic').textContent=ch.topic||'';
+  $('msgInput').placeholder='Написать в #'+(ch.name||'канал')+'…';
+  renderChannelNav();
   $('composer').style.display='block';
-  $('emptyState')?.remove();
-
-  messages = [];
-  oldestKey = null;
-  oldestTs = null;
-  hasMore = true;
-  loadingOlder = false;
-  if(msgListener){ try{ db.ref(msgListener.path).off('child_added', msgListener.cb); }catch(e){} msgListener=null; }
-
-  const box = $('messages');
-  box.innerHTML = '<div class="msg-load" id="loadOlder">Загрузка…</div>';
-  loadMessages(true);
+  const empty=$('emptyState'); if(empty) empty.remove();
+  messages=[]; oldestTs=null; hasMore=true; loadingOlder=false; lastMsgTs=0;
+  stopPoll();
+  $('messages').innerHTML='<div class="msg-load" id="loadOlder">Загрузка…</div>';
+  loadMessages(true).then(()=>{
+    pollTimer=setInterval(pollNewMessages, POLL_MS);
+  });
 }
+
+function stopPoll(){ if(pollTimer){ clearInterval(pollTimer); pollTimer=null; } }
 
 async function loadMessages(initial){
-  if(!currentServerId || !currentChannelId) return;
-  const path = `messages/${currentServerId}/${currentChannelId}`;
-  let q = db.ref(path).orderByChild('createdAt').limitToLast(PAGE_SIZE);
-  if(!initial && oldestTs){
-    q = db.ref(path).orderByChild('createdAt').endAt(oldestTs-1).limitToLast(PAGE_SIZE);
-  }
-
+  if(!currentChannelId) return;
+  const path='messages/'+currentChannelId;
   try{
-    const snap = await q.once('value');
-    const batch = [];
-    snap.forEach(c=>{
-      batch.push({ key:c.key, ...c.val() });
-    });
-    if(batch.length < PAGE_SIZE) hasMore = false;
-    if(batch.length){
-      oldestKey = batch[0].key;
-      oldestTs = batch[0].createdAt;
-    }
+    const params={ orderBy:'"createdAt"', limitToLast:String(PAGE_SIZE) };
+    if(!initial&&oldestTs) params.endAt=String(oldestTs-1);
+    const raw=await fbQuery(path, params)||{};
+    const batch=Object.entries(raw).map(([key,v])=>({key,...v})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    if(batch.length<PAGE_SIZE) hasMore=false;
+    if(batch.length) oldestTs=batch[0].createdAt;
     if(initial){
-      messages = batch;
+      messages=batch;
+      if(batch.length) lastMsgTs=batch[batch.length-1].createdAt;
       renderMessages(true);
-      const lastTs = batch.length ? batch[batch.length-1].createdAt : Date.now();
-      const liveRef = db.ref(path).orderByChild('createdAt').startAt(lastTs+1);
-      const cb = (s)=>{
-        const m = { key:s.key, ...s.val() };
-        if(messages.some(x=>x.key===m.key)) return;
-        messages.push(m);
-        appendMessage(m, true);
-      };
-      liveRef.on('child_added', cb);
-      msgListener = { path, cb, ref: liveRef };
     }else{
-      const box = $('messages');
-      const prevH = box.scrollHeight;
-      messages = batch.concat(messages);
-      renderMessages(false);
-      box.scrollTop = box.scrollHeight - prevH;
+      const box=$('messages'); const prevH=box.scrollHeight;
+      messages=batch.concat(messages); renderMessages(false);
+      box.scrollTop=box.scrollHeight-prevH;
     }
-    const loadEl = $('loadOlder');
-    if(loadEl){
-      loadEl.textContent = hasMore ? '↑ Загрузить ещё' : 'Начало переписки';
-      loadEl.onclick = hasMore ? ()=>loadOlder() : null;
-    }
+    const el=$('loadOlder');
+    if(el){ el.textContent=hasMore?'↑ Загрузить ещё':'Начало'; el.onclick=hasMore?()=>loadOlder():null; }
   }catch(e){
-    console.error(e);
-    toast('Ошибка загрузки сообщений');
+    console.error(e); toast('Ошибка: '+e.message);
+    const el=$('loadOlder'); if(el) el.textContent='Ошибка';
   }
 }
 
-function loadOlder(){
-  if(loadingOlder || !hasMore) return;
-  loadingOlder = true;
-  const el = $('loadOlder');
-  if(el) el.textContent='Загрузка…';
-  loadMessages(false).finally(()=>{ loadingOlder=false; });
+async function pollNewMessages(){
+  if(!currentChannelId) return;
+  try{
+    const path='messages/'+currentChannelId;
+    const raw=await fbQuery(path,{ orderBy:'"createdAt"', startAt:String((lastMsgTs||0)+1), limitToLast:'30' })||{};
+    const batch=Object.entries(raw).map(([key,v])=>({key,...v})).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
+    for(const m of batch){
+      if(messages.some(x=>x.key===m.key)) continue;
+      messages.push(m); appendMessage(m,true);
+      if(m.createdAt>lastMsgTs) lastMsgTs=m.createdAt;
+    }
+  }catch(e){}
 }
 
-function onMessagesScroll(){
-  const box = $('messages');
-  if(box.scrollTop < 80 && hasMore && !loadingOlder) loadOlder();
-}
+function loadOlder(){ if(loadingOlder||!hasMore) return; loadingOlder=true; const el=$('loadOlder'); if(el) el.textContent='Загрузка…'; loadMessages(false).finally(()=>{loadingOlder=false}); }
+function onMessagesScroll(){ const box=$('messages'); if(box.scrollTop<80&&hasMore&&!loadingOlder) loadOlder(); }
 
 function renderMessages(scrollBottom){
-  const box = $('messages');
-  let html = `<div class="msg-load" id="loadOlder">${hasMore?'↑ Загрузить ещё':'Начало переписки'}</div>`;
-  let lastDay = '';
+  const box=$('messages');
+  let html='<div class="msg-load" id="loadOlder">'+(hasMore?'↑ Загрузить ещё':'Начало')+'</div>';
+  let lastDay='';
   for(const m of messages){
-    const dk = dayKey(m.createdAt);
-    if(dk !== lastDay){
-      lastDay = dk;
-      const d = new Date(m.createdAt);
-      html += `<div class="msg-day"><span>${d.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}</span></div>`;
-    }
-    html += messageHtml(m);
+    const dk=dayKey(m.createdAt);
+    if(dk!==lastDay){ lastDay=dk; const d=new Date(m.createdAt); html+='<div class="msg-day" data-day="'+dk+'"><span>'+d.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})+'</span></div>'; }
+    html+=messageHtml(m);
   }
-  box.innerHTML = html;
-  if($('loadOlder') && hasMore) $('loadOlder').onclick = ()=>loadOlder();
-  if(scrollBottom) box.scrollTop = box.scrollHeight;
+  box.innerHTML=html;
+  if($('loadOlder')&&hasMore) $('loadOlder').onclick=()=>loadOlder();
+  if(scrollBottom) box.scrollTop=box.scrollHeight;
 }
 
 function appendMessage(m, scroll){
-  const box = $('messages');
-  const dk = dayKey(m.createdAt);
-  const days = box.querySelectorAll('.msg-day');
-  let needDay = true;
-  if(days.length){
-    const last = days[days.length-1];
-    if(last.textContent.includes(new Date(m.createdAt).toLocaleDateString('ru-RU',{day:'numeric',month:'long'}))) needDay=false;
-  }
-  if(needDay){
-    const d = new Date(m.createdAt);
-    const div = document.createElement('div');
-    div.className='msg-day';
-    div.innerHTML = `<span>${d.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})}</span>`;
+  const box=$('messages');
+  const dk=dayKey(m.createdAt);
+  if(!box.querySelector('.msg-day[data-day="'+dk+'"]')){
+    const d=new Date(m.createdAt); const div=document.createElement('div');
+    div.className='msg-day'; div.dataset.day=dk;
+    div.innerHTML='<span>'+d.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'})+'</span>';
     box.appendChild(div);
   }
-  const wrap = document.createElement('div');
-  wrap.innerHTML = messageHtml(m);
+  const wrap=document.createElement('div'); wrap.innerHTML=messageHtml(m);
   box.appendChild(wrap.firstElementChild);
-  if(scroll) box.scrollTop = box.scrollHeight;
+  if(scroll) box.scrollTop=box.scrollHeight;
 }
 
 function messageHtml(m){
-  if(m.system){
-    return `<div class="msg system">${esc(m.content)}</div>`;
+  const av=m.avatar||('https://api.dicebear.com/7.x/identicon/svg?seed='+encodeURIComponent(m.authorId||'x'));
+  let attach='';
+  if(m.attach&&m.attach.type&&m.attach.type.indexOf('image/')===0){
+    attach='<div class="attach" style="margin-top:8px"><img src="'+esc(m.attach.url)+'" style="max-width:320px;border-radius:8px;border:1px solid var(--bd);cursor:pointer" onclick="window.open(this.src)"/></div>';
+  }else if(m.attach){
+    attach='<div style="margin-top:6px"><a href="'+esc(m.attach.url)+'" target="_blank" rel="noopener" style="color:#aaa">'+esc(m.attach.name||'Файл')+'</a></div>';
   }
-  const av = m.avatar || ('https://api.dicebear.com/7.x/identicon/svg?seed='+encodeURIComponent(m.authorId||'x'));
-  let attach = '';
-  if(m.attach){
-    if(m.attach.type?.startsWith('image/')){
-      attach = `<div class="attach"><img src="${esc(m.attach.url)}" alt="" onclick="window.open(this.src)"/></div>`;
-    }else if(m.attach.type?.startsWith('video/') || m.attach.isVideo){
-      attach = `<div class="attach"><div class="vid-card" onclick="openVideo('${esc(m.attach.url)}','${esc(m.attach.name||'video')}')">
-        <div class="ic">▶</div>
-        <div><div class="nm">${esc(m.attach.name||'Видео')}</div><div class="sz">${m.attach.size?Math.round(m.attach.size/1024)+' KB':'видео'}</div></div>
-      </div></div>`;
-    }else{
-      attach = `<div class="attach"><a href="${esc(m.attach.url)}" target="_blank" rel="noopener">${esc(m.attach.name||'Файл')}</a></div>`;
-    }
-  }
-  let content = esc(m.content||'');
-  content = content.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-
-  return `<div class="msg" data-key="${esc(m.key)}">
-    <img class="av" src="${esc(av)}" alt="" onerror="this.src='https://api.dicebear.com/7.x/identicon/svg?seed=x'"/>
-    <div class="body">
-      <div class="head"><span class="author">${esc(m.authorName||'User')}</span><span class="time">${fmtTime(m.createdAt)}</span></div>
-      <div class="content">${content}</div>
-      ${attach}
-    </div>
-  </div>`;
+  let content=esc(m.content||'');
+  content=content.replace(/(https?:\/\/[^\s<]+)/g,'<a href="$1" target="_blank" rel="noopener">$1</a>');
+  return '<div class="msg"><img class="av" src="'+esc(av)+'" alt=""/><div class="body"><div class="head"><span class="author">'+esc(m.authorName||'User')+'</span><span class="time">'+fmtTime(m.createdAt)+'</span></div><div class="content">'+content+'</div>'+attach+'</div></div>';
 }
 
 async function sendMessage(){
-  const text = $('msgInput').value.trim();
-  if(!text && !pendingAttach) return;
-  if(!currentServerId || !currentChannelId) return;
-
-  const btn = $('sendBtn');
-  btn.disabled=true;
-
-  const msg = {
-    authorId: me.uid,
-    authorName: me.displayName||me.nick,
-    avatar: me.avatar||'',
-    content: text,
-    createdAt: Date.now(),
-    attach: null
-  };
-
+  const text=$('msgInput').value.trim();
+  if(!text&&!pendingAttach) return;
+  if(!currentChannelId) return;
+  const btn=$('sendBtn'); btn.disabled=true;
+  const msg={ authorId:me.uid, authorName:me.displayName||me.username||'User', avatar:me.avatar||'', content:text, createdAt:Date.now(), attach:null };
   if(pendingAttach){
-    if(pendingAttach.dataUrl.length > 900000){
-      toast('Файл слишком большой для RTDB. Используйте URL.');
-      btn.disabled=false;
-      return;
-    }
-    msg.attach = {
-      type: pendingAttach.type,
-      name: pendingAttach.name,
-      size: pendingAttach.size,
-      url: pendingAttach.dataUrl,
-      isVideo: pendingAttach.type.startsWith('video/')
-    };
+    if(pendingAttach.dataUrl.length>900000){ toast('Файл слишком большой'); btn.disabled=false; return; }
+    msg.attach={ type:pendingAttach.type, name:pendingAttach.name, size:pendingAttach.size, url:pendingAttach.dataUrl };
   }
-
   try{
-    const ref = db.ref(`messages/${currentServerId}/${currentChannelId}`).push();
-    await ref.set(msg);
-    $('msgInput').value='';
-    autoGrow($('msgInput'));
-    clearAttach();
-    if(!messages.some(m=>m.key===ref.key)){
-      const full = { key:ref.key, ...msg };
-      messages.push(full);
-      appendMessage(full, true);
+    const res=await fbPush('messages/'+currentChannelId, msg);
+    const key=res.name;
+    $('msgInput').value=''; autoGrow($('msgInput')); clearAttach();
+    if(!messages.some(m=>m.key===key)){
+      const full={ key, ...msg }; messages.push(full); appendMessage(full,true);
+      if(msg.createdAt>(lastMsgTs||0)) lastMsgTs=msg.createdAt;
     }
-  }catch(e){
-    console.error(e);
-    toast('Не удалось отправить: '+e.message);
-  }finally{
-    btn.disabled=false;
-    $('msgInput').focus();
-  }
+  }catch(e){ toast('Ошибка: '+e.message); }
+  finally{ btn.disabled=false; $('msgInput').focus(); }
 }
 
-function onComposerKey(e){
-  if(e.key==='Enter' && !e.shiftKey){
-    e.preventDefault();
-    sendMessage();
-  }
-}
-function autoGrow(el){
-  el.style.height='auto';
-  el.style.height=Math.min(el.scrollHeight,160)+'px';
-}
+function onComposerKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(); } }
+function autoGrow(el){ el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,140)+'px'; }
 
 function onFileSelected(e){
-  const f = e.target.files?.[0];
-  if(!f) return;
-  if(f.size > 1.5*1024*1024){
-    toast('Макс. 1.5 MB для вложений через RTDB.');
-    e.target.value='';
-    return;
-  }
-  const reader = new FileReader();
-  reader.onload = ()=>{
-    pendingAttach = { type:f.type, name:f.name, size:f.size, dataUrl:reader.result };
-    renderAttachPreview();
-  };
-  reader.readAsDataURL(f);
-  e.target.value='';
+  const f=e.target.files&&e.target.files[0]; if(!f) return;
+  if(f.size>1.5*1024*1024){ toast('Макс 1.5 MB'); e.target.value=''; return; }
+  const reader=new FileReader();
+  reader.onload=()=>{ pendingAttach={ type:f.type, name:f.name, size:f.size, dataUrl:reader.result }; renderAttachPreview(); };
+  reader.readAsDataURL(f); e.target.value='';
 }
 function renderAttachPreview(){
-  const box = $('attachPreview');
+  const box=$('attachPreview');
   if(!pendingAttach){ box.innerHTML=''; return; }
-  const isImg = pendingAttach.type.startsWith('image/');
-  const isVid = pendingAttach.type.startsWith('video/');
-  box.innerHTML = `<div class="ap">
-    ${isImg?`<img src="${pendingAttach.dataUrl}"/>`:isVid?`<video src="${pendingAttach.dataUrl}"></video>`:`<div style="display:grid;place-items:center;height:100%;font-size:11px;color:var(--mu)">FILE</div>`}
-    <button class="rm" onclick="clearAttach()">×</button>
-  </div>`;
+  const isImg=pendingAttach.type.indexOf('image/')===0;
+  box.innerHTML='<div class="ap">'+(isImg?'<img src="'+pendingAttach.dataUrl+'"/>':'<div style="display:grid;place-items:center;height:100%;font-size:10px;color:var(--mu)">FILE</div>')+'<button class="rm" onclick="clearAttach()">×</button></div>';
 }
 function clearAttach(){ pendingAttach=null; renderAttachPreview(); }
 
-function openVideo(url, title){
-  $('videoPlayer').src = url;
-  $('videoTitle').textContent = title||'Видео';
-  openModal('videoModal');
-}
-function closeVideo(){
-  $('videoPlayer').pause();
-  $('videoPlayer').removeAttribute('src');
-  closeModal('videoModal');
+async function loadOnline(){
+  try{
+    const all=await fbGet('users')||{};
+    const list=Object.entries(all).map(([id,u])=>({id,...u})).filter(u=>(u.status||'')==='online'||(u.lastLogin&&Date.now()-u.lastLogin<5*60*1000));
+    list.sort((a,b)=>(a.displayName||a.username||'').localeCompare(b.displayName||b.username||''));
+    $('memberCount').textContent=list.length;
+    $('membersList').innerHTML=list.map(u=>{
+      const av=u.avatar||('https://api.dicebear.com/7.x/identicon/svg?seed='+encodeURIComponent(u.id));
+      const role=(u.username||'').toLowerCase()===OWNER_NICK.toLowerCase()?'owner':'';
+      return '<div class="mem-item"><div class="av"><img src="'+esc(av)+'" alt=""/><span class="dot" style="background:var(--online)"></span></div><div style="min-width:0"><div class="nm">'+esc(u.displayName||u.username||u.id)+'</div>'+(role?'<div class="role">'+role+'</div>':'')+'</div></div>';
+    }).join('');
+  }catch(e){}
 }
 
-/* ========== PROFILE / SETTINGS ========== */
-function openProfileSettings(){
-  $('profName').value = me.displayName||'';
-  $('profStatus').value = me.status||'online';
-  $('profAvatar').value = me.avatar||'';
+function openProfile(){
+  $('profName').value=me.displayName||me.username||'';
+  $('profAvatar').value=me.avatar||'';
   openModal('modalProfile');
 }
 async function saveProfile(){
-  const displayName = $('profName').value.trim()||me.nick;
-  const status = $('profStatus').value;
-  const avatar = $('profAvatar').value.trim();
-  await db.ref('users/'+me.uid).update({ displayName, status, avatar });
-  me.displayName=displayName; me.status=status; me.avatar=avatar;
-  $('myName').textContent=displayName;
-  $('myStatus').textContent=status;
-  $('myDot').style.background=statusColor(status);
-  if(avatar) $('myAv').src=avatar;
-  closeModal('modalProfile');
-  toast('Профиль сохранён');
+  const displayName=$('profName').value.trim()||me.username||'User';
+  const avatar=$('profAvatar').value.trim();
+  try{
+    await fbUpdate('users/'+me.uid, { displayName, avatar });
+    me.displayName=displayName; me.avatar=avatar;
+    $('myName').textContent=displayName;
+    $('myAv').src=avatar||('https://api.dicebear.com/7.x/identicon/svg?seed='+encodeURIComponent(me.uid));
+    closeModal('modalProfile'); toast('Сохранено');
+  }catch(e){ toast(e.message); }
 }
 
-function openServerSettings(){
-  if(!currentServerId) return;
-  const s = serversCache[currentServerId];
-  $('setServerName').value = s.name||'';
-  $('setInviteCode').value = s.invite||'—';
-  const roles = s.roles||{};
-  $('rolesList').innerHTML = Object.entries(roles).map(([k,r])=>
-    `<div><b style="color:${esc(r.color||'#888')}">${esc(r.name||k)}</b> — ${(r.perms||[]).join(', ')}</div>`
-  ).join('') || 'Нет ролей';
-  openModal('modalServerSettings');
-}
-async function saveServerSettings(){
-  if(!currentServerId) return;
-  const name = $('setServerName').value.trim();
-  if(!name) return;
-  await db.ref('servers/'+currentServerId+'/name').set(name);
-  serversCache[currentServerId].name=name;
-  $('curServerName').textContent=name;
-  renderServerRail();
-  closeModal('modalServerSettings');
-  toast('Сохранено');
-}
-
-function openDMs(){ toast('Личные сообщения — в следующей версии'); }
-
-/* ========== MODALS ========== */
 function openModal(id){ $(id).classList.add('on'); }
 function closeModal(id){ $(id).classList.remove('on'); }
 
-/* ========== INIT ========== */
+document.addEventListener('keydown', e=>{
+  if(e.key==='Enter'&&$('authScreen').style.display!=='none'&&document.activeElement&&document.activeElement.tagName==='INPUT'){ e.preventDefault(); doAuth(); }
+  if(e.key==='Escape'){ ['modalCreateChannel','modalProfile'].forEach(id=>{ if($(id).classList.contains('on')) closeModal(id); }); }
+});
+
 (async function init(){
-  const ok = await tryRestoreSession();
-  if(ok) enterApp();
+  try{ if(await tryRestoreSession()) enterApp(); }catch(e){}
 })();
 </script>
 </body>
