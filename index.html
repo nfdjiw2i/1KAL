@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
 <meta name="google" content="notranslate"/>
 <title>INTEL CONNECT</title>
-<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet"/>
 <style>
 :root{
   --bg:#070707;--s1:#0e0e0e;--s2:#151515;--s3:#1a1a1a;--bd:#222;--bd2:#2a2a2a;
@@ -277,6 +277,7 @@ label{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase
     <button type="button" class="on" data-cstab="overview" onclick="chSetTab('overview')">Overview</button>
     <button type="button" data-cstab="permissions" onclick="chSetTab('permissions')">Permissions</button>
     <button type="button" data-cstab="moderation" onclick="chSetTab('moderation')">Moderation</button>
+    <button type="button" data-cstab="category-rules" onclick="chSetTab('category-rules')">Category Rules</button>
   </div>
   <div id="chSetPanelOverview">
     <div class="fld"><label>Name</label><input id="chSetName"/></div>
@@ -295,6 +296,11 @@ label{display:block;font-size:10px;letter-spacing:.08em;text-transform:uppercase
     </div>
   </div>
   <div id="chSetPanelModeration" style="display:none">
+    <div class="fld"><label>Banned words (comma-separated)</label><input id="chSetBanWords" placeholder="spam, scam"/></div>
+    <div class="perm-item" style="margin-top:8px"><span>Slowmode (seconds, 0 = off)</span><input id="chSetSlowmode" type="number" min="0" max="21600" style="width:90px" value="0"/></div>
+    <div class="perm-item" style="margin-top:8px"><span>NSFW channel</span><input type="checkbox" id="chSetNsfw"/></div>
+  </div>
+  <div id="chSetPanelCategoryRules" style="display:none">
     <div class="fld"><label>Banned words (comma-separated)</label><input id="chSetBanWords" placeholder="spam, scam"/></div>
     <div class="perm-item" style="margin-top:8px"><span>Slowmode (seconds, 0 = off)</span><input id="chSetSlowmode" type="number" min="0" max="21600" style="width:90px" value="0"/></div>
     <div class="perm-item" style="margin-top:8px"><span>NSFW channel</span><input type="checkbox" id="chSetNsfw"/></div>
@@ -500,15 +506,7 @@ function renderNav(){
       .forEach(([id,ch])=>renderCh(id,ch));
   });
 
-  if(canManage()){
-    const add=document.createElement('div');
-    add.style.cssText='padding:8px;display:flex;gap:6px;flex-wrap:wrap';
-    const b1=document.createElement('button'); b1.className='btn btn-sm'; b1.textContent='+ Channel'; b1.onclick=()=>openCreateChannelPreselect('text');
-    const b2=document.createElement('button'); b2.className='btn btn-sm'; b2.textContent='+ Forum'; b2.onclick=()=>openCreateChannelPreselect('forum');
-    const b3=document.createElement('button'); b3.className='btn btn-sm'; b3.textContent='+ Category'; b3.onclick=openCreateCategory;
-    add.appendChild(b1); add.appendChild(b2); add.appendChild(b3);
-    nav.appendChild(add);
-  }
+  // NO buttons for +channel +forum +category (PC menu already used)
 }
 
 function getEffectivePerm(ch, permKey){
@@ -619,6 +617,7 @@ function chSetTab(tab){
   $('chSetPanelOverview').style.display = tab==='overview'?'block':'none';
   $('chSetPanelPermissions').style.display = tab==='permissions'?'block':'none';
   $('chSetPanelModeration').style.display = tab==='moderation'?'block':'none';
+  $('chSetPanelCategoryRules').style.display = tab==='category-rules'?'block':'none';
 }
 
 async function openChannelSettings(id){
@@ -768,6 +767,39 @@ async function deleteChannel(){
   toast('Deleted');
 }
 
+/* CATEGORY RULES (works for all channels in category) */
+let categoryRules = {}; // {catId: {banWords:[], slowmode:0, nsfw:false}}
+
+async function getCategoryRules(catId){
+  if(categoryRules[catId] !== undefined) return categoryRules[catId];
+  try{
+    const data = await fbGet('category-rules/'+catId);
+    categoryRules[catId] = data || {banWords:[], slowmode:0, nsfw:false};
+    return categoryRules[catId];
+  }catch(e){
+    categoryRules[catId] = {banWords:[], slowmode:0, nsfw:false};
+    return categoryRules[catId];
+  }
+}
+
+async function saveCategoryRules(catId, rules){
+  categoryRules[catId] = rules;
+  await fbSet('category-rules/'+catId, rules);
+}
+
+function getEffectiveCategoryRules(catId){
+  return categoryRules[catId] || {banWords:[], slowmode:0, nsfw:false};
+}
+
+function showCategoryRules(catId){
+  const rules = getEffectiveCategoryRules(catId);
+  $('chSetBanWords').value = (rules.banWords||[]).join(', ');
+  $('chSetSlowmode').value = rules.slowmode||0;
+  $('chSetNsfw').checked = !!rules.nsfw;
+  openModal('modalChannelPerms');
+  chSetTab('category-rules');
+}
+
 /* ===== CONTEXT MENU ===== */
 function hideCtx(){ const m=$('ctxMenu'); if(m) m.classList.remove('on'); }
 function showCtx(x,y, items){
@@ -813,10 +845,6 @@ document.addEventListener('contextmenu', e=>{
     ctxTarget={type:'channel',id};
     showCtx(e.clientX,e.clientY,[
       {id:'ch-settings',label:'Edit Channel'},
-      {id:'new-channel',label:'Create Text Channel'},
-      {id:'new-forum',label:'Create Forum'},
-      {id:'new-category',label:'Create Category'},
-      'sep',
       {id:'ch-delete',label:'Delete Channel',danger:true}
     ]);
   }else if(catHdr){
@@ -827,7 +855,8 @@ document.addEventListener('contextmenu', e=>{
       {id:'new-forum',label:'Create Forum'},
       {id:'new-category',label:'Create Category'},
       'sep',
-      {id:'cat-delete',label:'Delete Category',danger:true}
+      {id:'cat-delete',label:'Delete Category',danger:true},
+      {id:'cat-rules',label:'Category Rules'}
     ]);
   }else{
     ctxTarget={type:'nav',id:null};
@@ -1112,13 +1141,16 @@ async function createRole(){
 }
 function editRole(id){
   const r=roles[id];if(!r)return;
-  const perms=['VIEW_CHANNELS','SEND_MESSAGES','MANAGE_CHANNELS','MANAGE_ROLES','ADMINISTRATOR','POST_FORUM'];
+  const perms=['VIEW_CHANNELS','SEND_MESSAGES','MANAGE_CHANNELS','MANAGE_ROLES','ADMINISTRATOR','POST_FORUM','CREATE_CHANNELS','MANAGE_CATEGORY','MANAGE_ROLES','MANAGE_SERVER','MODERATE','KICK','BAN','VIEW_AUDIT_LOG','MANAGE_WEBHOOKS','MANAGE_THREADS'];
   const checks=perms.map(p=>`<div class="perm-item"><span>${p.replace(/_/g,' ')}</span><input type="checkbox" data-perm="${p}" ${(r.perms||[]).includes(p)?'checked':''}/></div>`).join('');
   $('roleEditor').innerHTML=`<h3 style="margin-bottom:12px">Edit: ${esc(r.name)}</h3>
     <div class="fld"><label>Name</label><input id="roleName" value="${esc(r.name)}"/></div>
     <div class="fld"><label>Color</label><input id="roleColor" type="color" value="${r.color||'#888888'}" style="height:40px;padding:4px"/></div>
     <div class="perm-grid">${checks}</div>
-    <div class="actions" style="margin-top:14px"><button class="btn btn-d" onclick="deleteRole('${id}')">Delete</button><button class="btn btn-w" onclick="saveRole('${id}')">Save Role</button></div>`;
+    <div class="actions" style="margin-top:14px">
+      <button class="btn btn-d" onclick="deleteRole('${id}')">Delete</button>
+      <button class="btn btn-w" onclick="saveRole('${id}')">Save Role</button>
+    </div>`;
 }
 async function saveRole(id){
   const name=$('roleName').value.trim()||'Role',color=$('roleColor').value;
